@@ -1,0 +1,559 @@
+CREATE TABLE alunos (
+    id_aluno SERIAL PRIMARY KEY,
+    matricula VARCHAR(20) NOT NULL UNIQUE,
+    cpf VARCHAR(11) NOT NULL UNIQUE,
+    nome_completo VARCHAR(200) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    telefone VARCHAR(20),
+    data_nascimento DATE NOT NULL,
+    endereco VARCHAR(300),
+    cidade VARCHAR(100),
+    estado VARCHAR(2),
+    cep VARCHAR(8),
+    data_ingresso DATE NOT NULL,
+    status_aluno VARCHAR(20) NOT NULL DEFAULT 'ativo',
+    CONSTRAINT alunos_status_chk CHECK (status_aluno IN ('ativo','trancado','formado','desistente'))
+);
+
+CREATE TABLE professores (
+    id_professor SERIAL PRIMARY KEY,
+    matricula VARCHAR(20) NOT NULL UNIQUE,
+    cpf VARCHAR(11) NOT NULL UNIQUE,
+    nome_completo VARCHAR(200) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    telefone VARCHAR(20),
+    data_nascimento DATE,
+    titulacao VARCHAR(50) NOT NULL,
+    data_contratacao DATE NOT NULL,
+    departamento_id INTEGER NOT NULL,
+    status_professor VARCHAR(20) NOT NULL DEFAULT 'ativo',
+    CONSTRAINT professores_status_chk CHECK (status_professor IN ('ativo','inativo'))
+);
+
+CREATE TABLE departamentos (
+    id_departamento SERIAL PRIMARY KEY,
+    codigo VARCHAR(10) NOT NULL UNIQUE,
+    nome VARCHAR(150) NOT NULL,
+    coordenador_id INTEGER,
+    telefone VARCHAR(20),
+    email VARCHAR(100)
+);
+
+CREATE TABLE cursos (
+    id_curso SERIAL PRIMARY KEY,
+    codigo VARCHAR(10) NOT NULL UNIQUE,
+    nome VARCHAR(150) NOT NULL,
+    grau VARCHAR(50) NOT NULL,
+    duracao_semestres INTEGER NOT NULL,
+    carga_horaria_total INTEGER NOT NULL,
+    departamento_id INTEGER NOT NULL,
+    coordenador_id INTEGER,
+    data_criacao DATE NOT NULL,
+    status_curso VARCHAR(20) NOT NULL DEFAULT 'ativo'
+);
+
+CREATE TABLE matriculas_curso (
+    id_matricula_curso SERIAL PRIMARY KEY,
+    aluno_id INTEGER NOT NULL,
+    curso_id INTEGER NOT NULL,
+    data_matricula DATE NOT NULL,
+    periodo_ingresso VARCHAR(10) NOT NULL,
+    forma_ingresso VARCHAR(50) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'cursando'
+);
+
+CREATE TABLE disciplinas (
+    id_disciplina SERIAL PRIMARY KEY,
+    codigo VARCHAR(10) NOT NULL UNIQUE,
+    nome VARCHAR(150) NOT NULL,
+    carga_horaria INTEGER NOT NULL,
+    creditos INTEGER NOT NULL,
+    ementa TEXT,
+    bibliografia TEXT,
+    departamento_id INTEGER NOT NULL,
+    tipo VARCHAR(20) NOT NULL,
+    CONSTRAINT disciplinas_tipo_chk CHECK (tipo IN ('obrigatoria','optativa','eletiva'))
+);
+
+CREATE TABLE pre_requisitos (
+    id_pre_requisito SERIAL PRIMARY KEY,
+    disciplina_id INTEGER NOT NULL,
+    disciplina_requisito_id INTEGER NOT NULL,
+    tipo_requisito VARCHAR(20) NOT NULL DEFAULT 'obrigatorio',
+    CONSTRAINT pre_requisitos_tipo_chk CHECK (tipo_requisito IN ('obrigatorio','recomendado'))
+);
+
+CREATE TABLE grade_curricular (
+    id_grade SERIAL PRIMARY KEY,
+    curso_id INTEGER NOT NULL,
+    disciplina_id INTEGER NOT NULL,
+    periodo_recomendado INTEGER NOT NULL,
+    obrigatoria BOOLEAN NOT NULL DEFAULT TRUE,
+    ano_vigencia INTEGER NOT NULL
+);
+
+CREATE TABLE periodos_letivos (
+    id_periodo SERIAL PRIMARY KEY,
+    ano INTEGER NOT NULL,
+    semestre INTEGER NOT NULL,
+    data_inicio DATE NOT NULL,
+    data_fim DATE NOT NULL,
+    data_inicio_matriculas DATE NOT NULL,
+    data_fim_matriculas DATE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'planejado',
+    CONSTRAINT periodos_letivos_status_chk CHECK (status IN ('planejado','em_andamento','encerrado'))
+);
+
+CREATE TABLE turmas (
+    id_turma SERIAL PRIMARY KEY,
+    codigo VARCHAR(20) NOT NULL UNIQUE,
+    disciplina_id INTEGER NOT NULL,
+    periodo_letivo_id INTEGER NOT NULL,
+    professor_id INTEGER NOT NULL,
+    vagas_total INTEGER NOT NULL,
+    vagas_ocupadas INTEGER NOT NULL DEFAULT 0,
+    horario VARCHAR(100) NOT NULL,
+    sala VARCHAR(20),
+    dias_semana VARCHAR(50) NOT NULL,
+    status_turma VARCHAR(20) NOT NULL DEFAULT 'aberta',
+    CONSTRAINT turmas_status_chk CHECK (status_turma IN ('aberta','em_andamento','encerrada','cancelada'))
+);
+
+CREATE TABLE matriculas_turma (
+    id_matricula_turma SERIAL PRIMARY KEY,
+    aluno_id INTEGER NOT NULL,
+    turma_id INTEGER NOT NULL,
+    data_matricula DATE NOT NULL,
+    situacao VARCHAR(20) NOT NULL DEFAULT 'matriculado',
+    CONSTRAINT matriculas_turma_situacao_chk CHECK (situacao IN ('matriculado','trancado','aprovado','reprovado','cancelado'))
+);
+
+CREATE TABLE avaliacoes (
+    id_avaliacao SERIAL PRIMARY KEY,
+    turma_id INTEGER NOT NULL,
+    tipo_avaliacao VARCHAR(50) NOT NULL,
+    descricao VARCHAR(200),
+    data_avaliacao DATE NOT NULL,
+    peso DECIMAL(5,2) NOT NULL,
+    valor_maximo DECIMAL(5,2) NOT NULL,
+    unidade INTEGER NOT NULL
+);
+
+CREATE TABLE notas (
+    id_nota SERIAL PRIMARY KEY,
+    matricula_turma_id INTEGER NOT NULL,
+    avaliacao_id INTEGER NOT NULL,
+    nota_obtida DECIMAL(5,2),
+    data_lancamento TIMESTAMP DEFAULT NOW(),
+    observacao TEXT
+);
+
+CREATE TABLE frequencias (
+    id_frequencia SERIAL PRIMARY KEY,
+    matricula_turma_id INTEGER NOT NULL,
+    data_aula DATE NOT NULL,
+    presente BOOLEAN NOT NULL DEFAULT TRUE,
+    justificativa TEXT,
+    data_registro TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE historico_escolar (
+    id_historico SERIAL PRIMARY KEY,
+    aluno_id INTEGER NOT NULL,
+    turma_id INTEGER NOT NULL,
+    nota_final DECIMAL(5,2),
+    frequencia_percentual DECIMAL(5,2),
+    situacao_final VARCHAR(20) NOT NULL,
+    data_conclusao DATE,
+    CONSTRAINT historico_escolar_situacao_chk CHECK (situacao_final IN ('aprovado','reprovado_nota','reprovado_falta','trancado'))
+);
+
+CREATE TABLE planos_ensino (
+    id_plano SERIAL PRIMARY KEY,
+    turma_id INTEGER NOT NULL UNIQUE,
+    objetivos TEXT NOT NULL,
+    conteudo_programatico TEXT NOT NULL,
+    metodologia TEXT NOT NULL,
+    criterios_avaliacao TEXT NOT NULL,
+    bibliografia_basica TEXT NOT NULL,
+    bibliografia_complementar TEXT,
+    data_cadastro TIMESTAMP DEFAULT NOW(),
+    aprovado BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE atividades_complementares (
+    id_atividade SERIAL PRIMARY KEY,
+    aluno_id INTEGER NOT NULL,
+    tipo_atividade VARCHAR(100) NOT NULL,
+    descricao VARCHAR(300) NOT NULL,
+    carga_horaria INTEGER NOT NULL,
+    data_realizacao DATE NOT NULL,
+    data_solicitacao TIMESTAMP DEFAULT NOW(),
+    status_validacao VARCHAR(20) NOT NULL DEFAULT 'pendente',
+    validador_id INTEGER,
+    data_validacao TIMESTAMP,
+    observacao TEXT,
+    CONSTRAINT atividades_complementares_status_chk CHECK (status_validacao IN ('pendente','aprovado','rejeitado'))
+);
+
+CREATE TABLE trabalhos_conclusao (
+    id_tcc SERIAL PRIMARY KEY,
+    aluno_id INTEGER NOT NULL,
+    curso_id INTEGER NOT NULL,
+    titulo VARCHAR(300) NOT NULL,
+    orientador_id INTEGER NOT NULL,
+    coorientador_id INTEGER,
+    data_inicio DATE NOT NULL,
+    data_defesa DATE,
+    nota_final DECIMAL(5,2),
+    status VARCHAR(20) NOT NULL DEFAULT 'em_andamento',
+    arquivo_url VARCHAR(500),
+    CONSTRAINT trabalhos_conclusao_status_chk CHECK (status IN ('em_andamento','defendido','aprovado','reprovado'))
+);
+
+CREATE TABLE mensagens (
+    id_mensagem SERIAL PRIMARY KEY,
+    remetente_id INTEGER NOT NULL,
+    tipo_remetente VARCHAR(20) NOT NULL,
+    destinatario_id INTEGER NOT NULL,
+    tipo_destinatario VARCHAR(20) NOT NULL,
+    titulo VARCHAR(200) NOT NULL,
+    conteudo TEXT NOT NULL,
+    data_envio TIMESTAMP NOT NULL DEFAULT NOW(),
+    data_leitura TIMESTAMP,
+    lida BOOLEAN NOT NULL DEFAULT FALSE,
+    prioridade VARCHAR(20) DEFAULT 'normal',
+    categoria VARCHAR(50),
+    anexo_url VARCHAR(500),
+    mensagem_pai_id INTEGER,
+    status VARCHAR(20) NOT NULL DEFAULT 'enviada',
+    CONSTRAINT mensagens_prioridade_chk CHECK (prioridade IN ('baixa','normal','alta','urgente')),
+    CONSTRAINT mensagens_status_chk CHECK (status IN ('rascunho','enviada','arquivada','excluida'))
+);
+
+CREATE TABLE mensagens_grupo (
+    id_mensagem_grupo SERIAL PRIMARY KEY,
+    mensagem_id INTEGER NOT NULL,
+    destinatario_id INTEGER NOT NULL,
+    tipo_destinatario VARCHAR(20) NOT NULL,
+    data_leitura TIMESTAMP,
+    lida BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT mensagens_grupo_unique UNIQUE (mensagem_id, destinatario_id, tipo_destinatario)
+);
+
+CREATE INDEX idx_matriculas_curso_aluno_curso ON matriculas_curso (aluno_id, curso_id);
+CREATE UNIQUE INDEX uq_disciplinas_codigo ON disciplinas (codigo);
+CREATE UNIQUE INDEX uq_grade_curricular_curso_disciplina_ano ON grade_curricular (curso_id, disciplina_id, ano_vigencia);
+CREATE UNIQUE INDEX uq_periodos_letivos_ano_semestre ON periodos_letivos (ano, semestre);
+CREATE INDEX idx_turmas_disciplina_periodo_codigo ON turmas (disciplina_id, periodo_letivo_id, codigo);
+CREATE UNIQUE INDEX uq_matriculas_turma_aluno_turma ON matriculas_turma (aluno_id, turma_id);
+CREATE UNIQUE INDEX uq_notas_matricula_avaliacao ON notas (matricula_turma_id, avaliacao_id);
+CREATE INDEX idx_frequencias_matricula_data ON frequencias (matricula_turma_id, data_aula);
+CREATE UNIQUE INDEX uq_historico_escolar_aluno_turma ON historico_escolar (aluno_id, turma_id);
+CREATE INDEX idx_professores_departamento ON professores (departamento_id);
+CREATE INDEX idx_cursos_departamento ON cursos (departamento_id);
+CREATE INDEX idx_disciplinas_departamento ON disciplinas (departamento_id);
+CREATE INDEX idx_turmas_periodo_letivo ON turmas (periodo_letivo_id);
+CREATE INDEX idx_mensagens_remetente ON mensagens (remetente_id, tipo_remetente);
+CREATE INDEX idx_mensagens_destinatario ON mensagens (destinatario_id, tipo_destinatario);
+CREATE INDEX idx_mensagens_data_envio ON mensagens (data_envio);
+CREATE INDEX idx_mensagens_grupo_destinatario ON mensagens_grupo (destinatario_id, tipo_destinatario);
+
+ALTER TABLE professores ADD CONSTRAINT fk_professores_departamento FOREIGN KEY (departamento_id) REFERENCES departamentos (id_departamento) ON DELETE NO ACTION;
+ALTER TABLE departamentos ADD CONSTRAINT fk_departamentos_coordenador FOREIGN KEY (coordenador_id) REFERENCES professores (id_professor) ON DELETE SET NULL;
+ALTER TABLE cursos ADD CONSTRAINT fk_cursos_departamento FOREIGN KEY (departamento_id) REFERENCES departamentos (id_departamento) ON DELETE NO ACTION;
+ALTER TABLE cursos ADD CONSTRAINT fk_cursos_coordenador FOREIGN KEY (coordenador_id) REFERENCES professores (id_professor) ON DELETE SET NULL;
+ALTER TABLE matriculas_curso ADD CONSTRAINT fk_matriculas_curso_aluno FOREIGN KEY (aluno_id) REFERENCES alunos (id_aluno) ON DELETE CASCADE;
+ALTER TABLE matriculas_curso ADD CONSTRAINT fk_matriculas_curso_curso FOREIGN KEY (curso_id) REFERENCES cursos (id_curso) ON DELETE NO ACTION;
+ALTER TABLE disciplinas ADD CONSTRAINT fk_disciplinas_departamento FOREIGN KEY (departamento_id) REFERENCES departamentos (id_departamento) ON DELETE NO ACTION;
+ALTER TABLE pre_requisitos ADD CONSTRAINT fk_pre_requisitos_disciplina FOREIGN KEY (disciplina_id) REFERENCES disciplinas (id_disciplina) ON DELETE CASCADE;
+ALTER TABLE pre_requisitos ADD CONSTRAINT fk_pre_requisitos_disciplina_requisito FOREIGN KEY (disciplina_requisito_id) REFERENCES disciplinas (id_disciplina) ON DELETE NO ACTION;
+ALTER TABLE grade_curricular ADD CONSTRAINT fk_grade_curricular_curso FOREIGN KEY (curso_id) REFERENCES cursos (id_curso) ON DELETE CASCADE;
+ALTER TABLE grade_curricular ADD CONSTRAINT fk_grade_curricular_disciplina FOREIGN KEY (disciplina_id) REFERENCES disciplinas (id_disciplina) ON DELETE NO ACTION;
+ALTER TABLE turmas ADD CONSTRAINT fk_turmas_disciplina FOREIGN KEY (disciplina_id) REFERENCES disciplinas (id_disciplina) ON DELETE NO ACTION;
+ALTER TABLE turmas ADD CONSTRAINT fk_turmas_periodo_letivo FOREIGN KEY (periodo_letivo_id) REFERENCES periodos_letivos (id_periodo) ON DELETE NO ACTION;
+ALTER TABLE turmas ADD CONSTRAINT fk_turmas_professor FOREIGN KEY (professor_id) REFERENCES professores (id_professor) ON DELETE NO ACTION;
+ALTER TABLE matriculas_turma ADD CONSTRAINT fk_matriculas_turma_aluno FOREIGN KEY (aluno_id) REFERENCES alunos (id_aluno) ON DELETE CASCADE;
+ALTER TABLE matriculas_turma ADD CONSTRAINT fk_matriculas_turma_turma FOREIGN KEY (turma_id) REFERENCES turmas (id_turma) ON DELETE CASCADE;
+ALTER TABLE avaliacoes ADD CONSTRAINT fk_avaliacoes_turma FOREIGN KEY (turma_id) REFERENCES turmas (id_turma) ON DELETE CASCADE;
+ALTER TABLE notas ADD CONSTRAINT fk_notas_matricula_turma FOREIGN KEY (matricula_turma_id) REFERENCES matriculas_turma (id_matricula_turma) ON DELETE CASCADE;
+ALTER TABLE notas ADD CONSTRAINT fk_notas_avaliacao FOREIGN KEY (avaliacao_id) REFERENCES avaliacoes (id_avaliacao) ON DELETE CASCADE;
+ALTER TABLE frequencias ADD CONSTRAINT fk_frequencias_matricula_turma FOREIGN KEY (matricula_turma_id) REFERENCES matriculas_turma (id_matricula_turma) ON DELETE CASCADE;
+ALTER TABLE historico_escolar ADD CONSTRAINT fk_historico_escolar_aluno FOREIGN KEY (aluno_id) REFERENCES alunos (id_aluno) ON DELETE CASCADE;
+ALTER TABLE historico_escolar ADD CONSTRAINT fk_historico_escolar_turma FOREIGN KEY (turma_id) REFERENCES turmas (id_turma) ON DELETE NO ACTION;
+ALTER TABLE planos_ensino ADD CONSTRAINT fk_planos_ensino_turma FOREIGN KEY (turma_id) REFERENCES turmas (id_turma) ON DELETE CASCADE;
+ALTER TABLE atividades_complementares ADD CONSTRAINT fk_atividades_complementares_aluno FOREIGN KEY (aluno_id) REFERENCES alunos (id_aluno) ON DELETE CASCADE;
+ALTER TABLE atividades_complementares ADD CONSTRAINT fk_atividades_complementares_validador FOREIGN KEY (validador_id) REFERENCES professores (id_professor) ON DELETE SET NULL;
+ALTER TABLE trabalhos_conclusao ADD CONSTRAINT fk_trabalhos_conclusao_aluno FOREIGN KEY (aluno_id) REFERENCES alunos (id_aluno) ON DELETE NO ACTION;
+ALTER TABLE trabalhos_conclusao ADD CONSTRAINT fk_trabalhos_conclusao_curso FOREIGN KEY (curso_id) REFERENCES cursos (id_curso) ON DELETE NO ACTION;
+ALTER TABLE trabalhos_conclusao ADD CONSTRAINT fk_trabalhos_conclusao_orientador FOREIGN KEY (orientador_id) REFERENCES professores (id_professor) ON DELETE NO ACTION;
+ALTER TABLE trabalhos_conclusao ADD CONSTRAINT fk_trabalhos_conclusao_coorientador FOREIGN KEY (coorientador_id) REFERENCES professores (id_professor) ON DELETE SET NULL;
+ALTER TABLE mensagens ADD CONSTRAINT fk_mensagem_pai FOREIGN KEY (mensagem_pai_id) REFERENCES mensagens (id_mensagem) ON DELETE SET NULL;
+ALTER TABLE mensagens_grupo ADD CONSTRAINT fk_mensagem_grupo_mensagem FOREIGN KEY (mensagem_id) REFERENCES mensagens (id_mensagem) ON DELETE CASCADE;
+
+
+-- CURSOS TÉCNICOS
+INSERT INTO cursos (codigo, nome, grau, duracaosemestres, cargahorariatotal, departamentoid, coordenadorid, datacriacao, statuscurso)
+VALUES
+  ('TEC-AGRO', 'Técnico em Agropecuária', 'Técnico', 6, 1200,
+     (SELECT iddepartamento FROM departamentos WHERE codigo='DEP-AGRO'),
+     (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+     '2015-02-01', 'ativo'),
+  ('TEC-ALIM', 'Técnico em Alimentos', 'Técnico', 6, 1200,
+     (SELECT iddepartamento FROM departamentos WHERE codigo='DEP-ALIM'),
+     (SELECT idprofessor FROM professores WHERE matricula='PRF-ALIM'),
+     '2016-02-01', 'ativo'),
+  ('TEC-INF', 'Técnico em Informática', 'Técnico', 6, 1200,
+     (SELECT iddepartamento FROM departamentos WHERE codigo='DEP-INF'),
+     (SELECT idprofessor FROM professores WHERE matricula='PRF-INF'),
+     '2017-02-01', 'ativo');
+
+-- PERÍODO LETIVO (2025/2)
+INSERT INTO periodosletivos (ano, semestre, datainicio, datafim, datainiciomatriculas, datafimmatriculas, status)
+VALUES (2025, 2, '2025-08-01', '2025-12-20', '2025-07-10', '2025-08-10', 'emandamento')
+ON CONFLICT DO NOTHING;
+
+-- DISCIPLINAS (3 por curso, mapeadas por ano 1-3; tipo obrigatória)
+-- Agropecuária
+INSERT INTO disciplinas (codigo, nome, cargahoraria, creditos, ementa, bibliografia, departamentoid, tipo)
+VALUES
+ ('AGRO1', 'Agropecuária I', 60, 4, 'Bases de agropecuária', 'Refs básicas', (SELECT iddepartamento FROM departamentos WHERE codigo='DEP-AGRO'), 'obrigatoria'),
+ ('AGRO2', 'Agropecuária II', 60, 4, 'Sistemas de produção vegetal', 'Refs intermediárias', (SELECT iddepartamento FROM departamentos WHERE codigo='DEP-AGRO'), 'obrigatoria'),
+ ('AGRO3', 'Agropecuária III', 60, 4, 'Sistemas de produção animal', 'Refs avançadas', (SELECT iddepartamento FROM departamentos WHERE codigo='DEP-AGRO'), 'obrigatoria');
+
+-- Alimentos
+INSERT INTO disciplinas (codigo, nome, cargahoraria, creditos, ementa, bibliografia, departamentoid, tipo)
+VALUES
+ ('ALIM1', 'Alimentos I', 60, 4, 'Introdução à tecnologia de alimentos', 'Refs básicas', (SELECT iddepartamento FROM departamentos WHERE codigo='DEP-ALIM'), 'obrigatoria'),
+ ('ALIM2', 'Alimentos II', 60, 4, 'Processos e conservação', 'Refs intermediárias', (SELECT iddepartamento FROM departamentos WHERE codigo='DEP-ALIM'), 'obrigatoria'),
+ ('ALIM3', 'Alimentos III', 60, 4, 'Controle de qualidade', 'Refs avançadas', (SELECT iddepartamento FROM departamentos WHERE codigo='DEP-ALIM'), 'obrigatoria');
+
+-- Informática
+INSERT INTO disciplinas (codigo, nome, cargahoraria, creditos, ementa, bibliografia, departamentoid, tipo)
+VALUES
+ ('INFO1', 'Informática I', 60, 4, 'Lógica e fundamentos de programação', 'Refs básicas', (SELECT iddepartamento FROM departamentos WHERE codigo='DEP-INF'), 'obrigatoria'),
+ ('INFO2', 'Informática II', 60, 4, 'Estruturas de dados e web', 'Refs intermediárias', (SELECT iddepartamento FROM departamentos WHERE codigo='DEP-INF'), 'obrigatoria'),
+ ('INFO3', 'Informática III', 60, 4, 'Redes e desenvolvimento avançado', 'Refs avançadas', (SELECT iddepartamento FROM departamentos WHERE codigo='DEP-INF'), 'obrigatoria');
+
+-- TURMAS (21 códigos: 1A..3G)
+-- Mapa: A-D → AGRO(1..3) com PRF-AGRO | E → ALIM(1..3) com PRF-ALIM | F-G → INFO(1..3) com PRF-INF
+-- Função auxiliar de seleção de disciplina por código de turma (expressa manualmente abaixo nas inserções)
+
+-- A
+INSERT INTO turmas (codigo, disciplinaid, periodoletivoid, professorid, vagastotal, horario, sala, diassemana)
+VALUES
+ ('1A', (SELECT iddisciplina FROM disciplinas WHERE codigo='AGRO1'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+        40, '08:00-10:00', 'SALA A1', 'Seg,Qua,Sex'),
+ ('2A', (SELECT iddisciplina FROM disciplinas WHERE codigo='AGRO2'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+        40, '10:00-12:00', 'SALA A2', 'Seg,Qua,Sex'),
+ ('3A', (SELECT iddisciplina FROM disciplinas WHERE codigo='AGRO3'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+        40, '13:00-15:00', 'SALA A3', 'Seg,Qua,Sex');
+
+-- B
+INSERT INTO turmas (codigo, disciplinaid, periodoletivoid, professorid, vagastotal, horario, sala, diassemana)
+VALUES
+ ('1B', (SELECT iddisciplina FROM disciplinas WHERE codigo='AGRO1'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+        40, '08:00-10:00', 'SALA B1', 'Ter,Qui'),
+ ('2B', (SELECT iddisciplina FROM disciplinas WHERE codigo='AGRO2'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+        40, '10:00-12:00', 'SALA B2', 'Ter,Qui'),
+ ('3B', (SELECT iddisciplina FROM disciplinas WHERE codigo='AGRO3'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+        40, '13:00-15:00', 'SALA B3', 'Ter,Qui');
+
+-- C
+INSERT INTO turmas (codigo, disciplinaid, periodoletivoid, professorid, vagastotal, horario, sala, diassemana)
+VALUES
+ ('1C', (SELECT iddisciplina FROM disciplinas WHERE codigo='AGRO1'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+        40, '08:00-10:00', 'SALA C1', 'Seg,Qua'),
+ ('2C', (SELECT iddisciplina FROM disciplinas WHERE codigo='AGRO2'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+        40, '10:00-12:00', 'SALA C2', 'Seg,Qua'),
+ ('3C', (SELECT iddisciplina FROM disciplinas WHERE codigo='AGRO3'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+        40, '13:00-15:00', 'SALA C3', 'Seg,Qua');
+
+-- D
+INSERT INTO turmas (codigo, disciplinaid, periodoletivoid, professorid, vagastotal, horario, sala, diassemana)
+VALUES
+ ('1D', (SELECT iddisciplina FROM disciplinas WHERE codigo='AGRO1'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+        40, '08:00-10:00', 'SALA D1', 'Ter,Qui'),
+ ('2D', (SELECT iddisciplina FROM disciplinas WHERE codigo='AGRO2'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+        40, '10:00-12:00', 'SALA D2', 'Ter,Qui'),
+ ('3D', (SELECT iddisciplina FROM disciplinas WHERE codigo='AGRO3'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-AGRO'),
+        40, '13:00-15:00', 'SALA D3', 'Ter,Qui');
+
+-- E (ALIMENTOS)
+INSERT INTO turmas (codigo, disciplinaid, periodoletivoid, professorid, vagastotal, horario, sala, diassemana)
+VALUES
+ ('1E', (SELECT iddisciplina FROM disciplinas WHERE codigo='ALIM1'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-ALIM'),
+        40, '08:00-10:00', 'SALA E1', 'Seg,Qua'),
+ ('2E', (SELECT iddisciplina FROM disciplinas WHERE codigo='ALIM2'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-ALIM'),
+        40, '10:00-12:00', 'SALA E2', 'Seg,Qua'),
+ ('3E', (SELECT iddisciplina FROM disciplinas WHERE codigo='ALIM3'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-ALIM'),
+        40, '13:00-15:00', 'SALA E3', 'Seg,Qua');
+
+-- F (INFORMÁTICA)
+INSERT INTO turmas (codigo, disciplinaid, periodoletivoid, professorid, vagastotal, horario, sala, diassemana)
+VALUES
+ ('1F', (SELECT iddisciplina FROM disciplinas WHERE codigo='INFO1'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-INF'),
+        40, '08:00-10:00', 'SALA F1', 'Ter,Qui'),
+ ('2F', (SELECT iddisciplina FROM disciplinas WHERE codigo='INFO2'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-INF'),
+        40, '10:00-12:00', 'SALA F2', 'Ter,Qui'),
+ ('3F', (SELECT iddisciplina FROM disciplinas WHERE codigo='INFO3'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-INF'),
+        40, '13:00-15:00', 'SALA F3', 'Ter,Qui');
+
+-- G (INFORMÁTICA)
+INSERT INTO turmas (codigo, disciplinaid, periodoletivoid, professorid, vagastotal, horario, sala, diassemana)
+VALUES
+ ('1G', (SELECT iddisciplina FROM disciplinas WHERE codigo='INFO1'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-INF'),
+        40, '08:00-10:00', 'SALA G1', 'Seg,Qua,Sex'),
+ ('2G', (SELECT iddisciplina FROM disciplinas WHERE codigo='INFO2'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-INF'),
+        40, '10:00-12:00', 'SALA G2', 'Seg,Qua,Sex'),
+ ('3G', (SELECT iddisciplina FROM disciplinas WHERE codigo='INFO3'),
+        (SELECT idperiodo FROM periodosletivos WHERE ano=2025 AND semestre=2),
+        (SELECT idprofessor FROM professores WHERE matricula='PRF-INF'),
+        40, '13:00-15:00', 'SALA G3', 'Seg,Qua,Sex');
+
+-- ALUNOS (21 alunos, um por turma 1A..3G)
+INSERT INTO alunos (matricula, cpf, nome_ccom, email, telefone, datanascimento, endereco, cidade, estado, cep, dataingresso)
+VALUES
+ ('ALU2025001','10000000001','Alice Souza','alice.souza@alunos.escola.edu.br','11980010001','2008-01-15','Rua A, 100','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025002','10000000002','Bruno Lima','bruno.lima@alunos.escola.edu.br','11980010002','2007-04-12','Rua A, 101','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025003','10000000003','Carla Mendes','carla.mendes@alunos.escola.edu.br','11980010003','2006-09-30','Rua A, 102','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025004','10000000004','Diego Alves','diego.alves@alunos.escola.edu.br','11980010004','2008-03-22','Rua B, 100','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025005','10000000005','Elisa Rocha','elisa.rocha@alunos.escola.edu.br','11980010005','2007-07-07','Rua B, 101','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025006','10000000006','Felipe Santos','felipe.santos@alunos.escola.edu.br','11980010006','2006-11-19','Rua B, 102','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025007','10000000007','Gabriela Nunes','gabriela.nunes@alunos.escola.edu.br','11980010007','2008-05-02','Rua C, 100','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025008','10000000008','Henrique Costa','henrique.costa@alunos.escola.edu.br','11980010008','2007-02-25','Rua C, 101','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025009','10000000009','Isabela Pires','isabela.pires@alunos.escola.edu.br','11980010009','2006-10-10','Rua C, 102','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025010','10000000010','João Pereira','joao.pereira@alunos.escola.edu.br','11980010010','2008-08-18','Rua D, 100','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025011','10000000011','Karina Moraes','karina.moraes@alunos.escola.edu.br','11980010011','2007-06-14','Rua D, 101','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025012','10000000012','Lucas Ribeiro','lucas.ribeiro@alunos.escola.edu.br','11980010012','2006-12-05','Rua D, 102','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025013','10000000013','Marina Carvalho','marina.carvalho@alunos.escola.edu.br','11980010013','2008-01-27','Rua E, 100','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025014','10000000014','Nicolas Barros','nicolas.barros@alunos.escola.edu.br','11980010014','2007-09-09','Rua E, 101','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025015','10000000015','Olivia Fernandes','olivia.fernandes@alunos.escola.edu.br','11980010015','2006-03-03','Rua E, 102','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025016','10000000016','Pedro Gomes','pedro.gomes@alunos.escola.edu.br','11980010016','2008-04-11','Rua F, 100','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025017','10000000017','Queila Araújo','queila.araujo@alunos.escola.edu.br','11980010017','2007-07-28','Rua F, 101','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025018','10000000018','Rafael Teixeira','rafael.teixeira@alunos.escola.edu.br','11980010018','2006-05-21','Rua F, 102','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025019','10000000019','Sabrina Martins','sabrina.martins@alunos.escola.edu.br','11980010019','2008-06-06','Rua G, 100','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025020','10000000020','Tiago Batista','tiago.batista@alunos.escola.edu.br','11980010020','2007-10-01','Rua G, 101','São Paulo','SP','01000000','2025-02-01'),
+ ('ALU2025021','10000000021','Vanessa Rodrigues','vanessa.rodrigues@alunos.escola.edu.br','11980010021','2006-02-16','Rua G, 102','São Paulo','SP','01000000','2025-02-01');
+
+-- MATRÍCULAS EM CURSO (A-D → TEC-AGRO; E → TEC-ALIM; F-G → TEC-INF)
+-- A
+INSERT INTO matriculascurso (alunoid, cursoid, datamatricula, periodoingresso)
+VALUES
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025001'), (SELECT idcurso FROM cursos WHERE codigo='TEC-AGRO'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025002'), (SELECT idcurso FROM cursos WHERE codigo='TEC-AGRO'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025003'), (SELECT idcurso FROM cursos WHERE codigo='TEC-AGRO'), '2025-02-10', '2025/1');
+
+-- B
+INSERT INTO matriculascurso (alunoid, cursoid, datamatricula, periodoingresso)
+VALUES
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025004'), (SELECT idcurso FROM cursos WHERE codigo='TEC-AGRO'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025005'), (SELECT idcurso FROM cursos WHERE codigo='TEC-AGRO'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025006'), (SELECT idcurso FROM cursos WHERE codigo='TEC-AGRO'), '2025-02-10', '2025/1');
+
+-- C
+INSERT INTO matriculascurso (alunoid, cursoid, datamatricula, periodoingresso)
+VALUES
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025007'), (SELECT idcurso FROM cursos WHERE codigo='TEC-AGRO'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025008'), (SELECT idcurso FROM cursos WHERE codigo='TEC-AGRO'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025009'), (SELECT idcurso FROM cursos WHERE codigo='TEC-AGRO'), '2025-02-10', '2025/1');
+
+-- D
+INSERT INTO matriculascurso (alunoid, cursoid, datamatricula, periodoingresso)
+VALUES
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025010'), (SELECT idcurso FROM cursos WHERE codigo='TEC-AGRO'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025011'), (SELECT idcurso FROM cursos WHERE codigo='TEC-AGRO'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025012'), (SELECT idcurso FROM cursos WHERE codigo='TEC-AGRO'), '2025-02-10', '2025/1');
+
+-- E
+INSERT INTO matriculascurso (alunoid, cursoid, datamatricula, periodoingresso)
+VALUES
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025013'), (SELECT idcurso FROM cursos WHERE codigo='TEC-ALIM'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025014'), (SELECT idcurso FROM cursos WHERE codigo='TEC-ALIM'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025015'), (SELECT idcurso FROM cursos WHERE codigo='TEC-ALIM'), '2025-02-10', '2025/1');
+
+-- F
+INSERT INTO matriculascurso (alunoid, cursoid, datamatricula, periodoingresso)
+VALUES
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025016'), (SELECT idcurso FROM cursos WHERE codigo='TEC-INF'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025017'), (SELECT idcurso FROM cursos WHERE codigo='TEC-INF'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025018'), (SELECT idcurso FROM cursos WHERE codigo='TEC-INF'), '2025-02-10', '2025/1');
+
+-- G
+INSERT INTO matriculascurso (alunoid, cursoid, datamatricula, periodoingresso)
+VALUES
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025019'), (SELECT idcurso FROM cursos WHERE codigo='TEC-INF'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025020'), (SELECT idcurso FROM cursos WHERE codigo='TEC-INF'), '2025-02-10', '2025/1'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025021'), (SELECT idcurso FROM cursos WHERE codigo='TEC-INF'), '2025-02-10', '2025/1');
+
+-- MATRÍCULAS EM TURMAS (um aluno por turma 1A..3G)
+INSERT INTO matriculasturma (alunoid, turmaid, datamatricula)
+VALUES
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025001'), (SELECT idturma FROM turmas WHERE codigo='1A'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025002'), (SELECT idturma FROM turmas WHERE codigo='2A'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025003'), (SELECT idturma FROM turmas WHERE codigo='3A'), '2025-02-20'),
+
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025004'), (SELECT idturma FROM turmas WHERE codigo='1B'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025005'), (SELECT idturma FROM turmas WHERE codigo='2B'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025006'), (SELECT idturma FROM turmas WHERE codigo='3B'), '2025-02-20'),
+
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025007'), (SELECT idturma FROM turmas WHERE codigo='1C'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025008'), (SELECT idturma FROM turmas WHERE codigo='2C'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025009'), (SELECT idturma FROM turmas WHERE codigo='3C'), '2025-02-20'),
+
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025010'), (SELECT idturma FROM turmas WHERE codigo='1D'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025011'), (SELECT idturma FROM turmas WHERE codigo='2D'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025012'), (SELECT idturma FROM turmas WHERE codigo='3D'), '2025-02-20'),
+
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025013'), (SELECT idturma FROM turmas WHERE codigo='1E'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025014'), (SELECT idturma FROM turmas WHERE codigo='2E'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025015'), (SELECT idturma FROM turmas WHERE codigo='3E'), '2025-02-20'),
+
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025016'), (SELECT idturma FROM turmas WHERE codigo='1F'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025017'), (SELECT idturma FROM turmas WHERE codigo='2F'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025018'), (SELECT idturma FROM turmas WHERE codigo='3F'), '2025-02-20'),
+
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025019'), (SELECT idturma FROM turmas WHERE codigo='1G'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025020'), (SELECT idturma FROM turmas WHERE codigo='2G'), '2025-02-20'),
+ ((SELECT idaluno FROM alunos WHERE matricula='ALU2025021'), (SELECT idturma FROM turmas WHERE codigo='3G'), '2025-02-20');
+
