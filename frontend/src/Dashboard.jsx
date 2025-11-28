@@ -1,11 +1,16 @@
 // Dashboard.jsx
+import { useState } from "react";
 import "./Dashboard.css";
 
 export default function Dashboard() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+
   return (
-    <div className="app">
-      {/* Sidebar */}
-      <aside className="sidebar">
+    <div className={`app ${isSidebarOpen ? "app--sidebar-open" : ""}`}>
+      {/* Sidebar (fixa no desktop, sobreposta no mobile) */}
+      <aside className={`sidebar ${isSidebarOpen ? "sidebar--open" : ""}`}>
         <div className="sidebar-logo">
           <div className="logo-icon">EM</div>
           <div className="logo-text">
@@ -33,15 +38,21 @@ export default function Dashboard() {
         </div>
       </aside>
 
+      {/* backdrop quando o menu estiver aberto no mobile */}
+      {isSidebarOpen && <div className="sidebar-backdrop" onClick={toggleSidebar} />}
+
       {/* Main content */}
       <main className="main">
         <header className="topbar">
-          <div />
+          <div className="topbar-left">
+            {/* botão azul EM: abre/fecha menu no mobile */}
+            <button className="mobile-logo-icon" onClick={toggleSidebar}>
+              EM
+            </button>
+          </div>
           <div className="topbar-right">
+            <span className="topbar-user-name">Moysés - 2G</span>
             <div className="topbar-user-avatar" />
-            <div className="topbar-class-info">
-              <span>Turma 2G - 2º Ano</span>
-            </div>
           </div>
         </header>
 
